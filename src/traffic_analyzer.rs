@@ -172,10 +172,8 @@ pub async fn analyze_traffic(
         let traffic_tier = determine_traffic_tier(&stats);
 
         // Apply rate limiting
-        let decayed_byte_count = (stats.byte_count as f32 * stats.decay_factor) as u32;
-        if !rate_limiter.check_rate(ip, traffic_tier, decayed_byte_count, now) {
-            println!("Rate limit exceeded for IP: {} (Tier: {:?}). Dropping excess traffic.", ip_addr, traffic_tier);
-            continue; // Skip further analysis if rate limit is exceeded
+        if let Err(e) = rate_limiter.update_rate_limit(ip, traffic_tier).await {
+            eprintln!("Failed to update rate limit for IP {}: {:?}", ip_addr, e);
         }
 
         let (packet_limit, byte_limit) = ip_thresholds
@@ -183,6 +181,7 @@ pub async fn analyze_traffic(
             .or_insert((packet_threshold.base, byte_threshold.base));
 
         let analyzer = ip_analyzers.entry(ip).or_insert_with(|| TrafficAnalyzer::new(traffic_analyzer_config));
+        let decayed_byte_count = (stats.byte_count as f32 * stats.decay_factor) as u32;
         let decayed_packet_count = (stats.packet_count as f32 * stats.decay_factor) as u32;
         analyzer.add_packet(decayed_byte_count, stats.last_seen);
         let suspicion_score = analyzer.analyze(&stats);

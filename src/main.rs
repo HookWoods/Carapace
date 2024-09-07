@@ -1,11 +1,13 @@
 use anyhow::Context;
 use aya::maps::{HashMap, MapData};
 use aya::programs::{Xdp, XdpFlags};
-use aya::{include_bytes_aligned, Bpf};
+use aya::Bpf;
+use aya_log::BpfLogger;
+use clap::Parser;
 use std::collections::{HashMap as StdHashMap, VecDeque};
 use std::net::Ipv4Addr;
+use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
-use clap::Parser;
 use tokio::signal;
 use tokio::time::{interval, Duration};
 
@@ -17,14 +19,15 @@ mod thresholds;
 mod utils;
 mod ml_model;
 
+use crate::rate_limiter::{RateLimitInfo, RateLimiterConfig};
+use crate::traffic_analyzer::TrafficAnalyzerConfig;
+use crate::utils::TrafficTier;
 use blacklist_manager::BlacklistManager;
 use ip_stats::IpStats;
 use rate_limiter::RateLimiter;
 use thresholds::DynamicThreshold;
 use traffic_analyzer::TrafficAnalyzer;
-use crate::rate_limiter::RateLimiterConfig;
-use crate::traffic_analyzer::TrafficAnalyzerConfig;
-use crate::utils::TrafficTier;
+use crate::blacklist_manager::BlacklistConfig;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -126,10 +129,14 @@ struct Args {
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
     let args = Args::parse();
+    env_logger::init();
+    let bpf_file_path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("src")
+        .join("resources")
+        .join("ddos_protection.bpf.o");
 
-    let mut bpf = Bpf::load(include_bytes_aligned!(
-        "../../target/bpfel-unknown-none/release/ddos_protection"
-    ))?;
+    let mut bpf = Bpf::load_file(bpf_file_path)?;
+    BpfLogger::init(&mut bpf)?;
 
     let program: &mut Xdp = bpf.program_mut("xdp_ddos_filter")
         .context("error loading XDP program")?
@@ -142,17 +149,19 @@ async fn main() -> Result<(), anyhow::Error> {
         .context("error getting ip_stats_map")?)?;
     let mut blacklist_map = HashMap::<MapData, u32, u8>::try_from(bpf.map_mut("blacklist_map")
         .context("error getting blacklist_map")?)?;
+    let rate_limit_map = HashMap::<MapData, u32, RateLimitInfo>::try_from(bpf.map_mut("rate_limit_map")
+        .context("error getting rate_limit_map")?)?;
 
     let packet_threshold = DynamicThreshold::new(
         args.packet_threshold_base,
         args.packet_threshold_multiplier,
-        args.packet_threshold_max
+        args.packet_threshold_max,
     );
 
     let byte_threshold = DynamicThreshold::new(
         args.byte_threshold_base,
         args.byte_threshold_multiplier,
-        args.byte_threshold_max
+        args.byte_threshold_max,
     );
 
     let traffic_analyzer_config = TrafficAnalyzerConfig {
@@ -163,22 +172,27 @@ async fn main() -> Result<(), anyhow::Error> {
         ml_anomaly_threshold: args.ml_anomaly_threshold,
     };
 
+    let black_list_config = BlacklistConfig {
+        temp_blacklist_duration: args.temp_blacklist_duration,
+        max_offenses: args.max_offenses,
+    };
+
     let rate_limiter_config = RateLimiterConfig {
-        base_rates: StdHashMap::from([
-            (TrafficTier::HTTPS, 2000.0),
-            (TrafficTier::HTTP, 1000.0),
-            (TrafficTier::TCP, 800.0),
-            (TrafficTier::UDP, 500.0),
-            (TrafficTier::ICMP, 100.0),
-            (TrafficTier::Other, 200.0),
+        base_rates: std::collections::HashMap::from([
+            (TrafficTier::HTTPS, 2000),
+            (TrafficTier::HTTP, 1000),
+            (TrafficTier::TCP, 800),
+            (TrafficTier::UDP, 500),
+            (TrafficTier::ICMP, 100),
+            (TrafficTier::Other, 200),
         ]),
-        base_capacities: StdHashMap::from([
-            (TrafficTier::HTTPS, 20000.0),
-            (TrafficTier::HTTP, 10000.0),
-            (TrafficTier::TCP, 8000.0),
-            (TrafficTier::UDP, 5000.0),
-            (TrafficTier::ICMP, 1000.0),
-            (TrafficTier::Other, 2000.0),
+        base_bursts: std::collections::HashMap::from([
+            (TrafficTier::HTTPS, 20000),
+            (TrafficTier::HTTP, 10000),
+            (TrafficTier::TCP, 8000),
+            (TrafficTier::UDP, 5000),
+            (TrafficTier::ICMP, 1000),
+            (TrafficTier::Other, 2000),
         ]),
         rate_increase_interval: args.rate_increase_interval,
         max_rate_multiplier: args.max_rate_multiplier,
@@ -187,8 +201,8 @@ async fn main() -> Result<(), anyhow::Error> {
 
     let mut ip_analyzers: StdHashMap<u32, TrafficAnalyzer> = StdHashMap::new();
     let mut ip_thresholds: StdHashMap<u32, (u32, u32)> = StdHashMap::new();
-    let mut blacklist_manager = BlacklistManager::new(args.temp_blacklist_duration, args.max_offenses);
-    let mut rate_limiter = RateLimiter::new(rate_limiter_config);
+    let mut blacklist_manager = BlacklistManager::new(black_list_config);
+    let mut rate_limiter = RateLimiter::new(rate_limiter_config, rate_limit_map);
 
     let mut historical_data: StdHashMap<u32, VecDeque<IpStats>> = StdHashMap::new();
 
@@ -206,16 +220,20 @@ async fn main() -> Result<(), anyhow::Error> {
                     update_historical_data(&mut historical_data, &ip_stats_map, args.max_historical_entries, args.decay_interval).await;
                 }
                 _ = cleanup_interval.tick() => {
-                    blacklist_manager::cleanup_blacklist(&mut blacklist_manager, &mut blacklist_map).await;
-                    rate_limiter::cleanup_rate_limiter(&mut rate_limiter).await;
+                    blacklist_manager.cleanup_blacklist(&mut blacklist_map).await;
+                    rate_limiter.cleanup_rate_limiter().await;
                     cleanup_old_entries(&mut ip_stats_map, &mut historical_data, &mut ip_analyzers, &mut ip_thresholds, args.entry_timeout).await;
                 }
                 _ = load_update_interval.tick() => {
-                    rate_limiter::update_load_factor(&mut rate_limiter, &ip_stats_map).await;
+                    rate_limiter.update_load_factor(&ip_stats_map).await;
                 }
                 _ = ml_train_interval.tick() => {
                     traffic_analyzer::train_ml_model(&mut ip_analyzers, &historical_data).await;
                 }
+                _ = signal::ctrl_c() => {
+                println!("Exiting...");
+                break;
+            }
             }
         }
     });
@@ -262,7 +280,7 @@ async fn cleanup_old_entries(
     historical_data: &mut StdHashMap<u32, VecDeque<IpStats>>,
     ip_analyzers: &mut StdHashMap<u32, TrafficAnalyzer>,
     ip_thresholds: &mut StdHashMap<u32, (u32, u32)>,
-    entry_timeout: u64
+    entry_timeout: u64,
 ) {
     let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
     let mut ips_to_remove = Vec::new();
