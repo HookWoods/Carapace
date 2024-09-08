@@ -6,9 +6,12 @@ edition = "2021"
 [dependencies]
 tokio = { version = "1.40.0", features = ["full"] }
 anyhow = "1.0.87"
+ddos_protection-common = { path = "ddos_protection-common" }
 
 aya = { version = "0.12", features = ["async_tokio"] }
 aya-log = "0.2"
+aya-ebpf = "0.1.0"
+aya-log-ebpf = "0.1.0"
 clap = { version = "4.1", features = ["derive"] }
 log = "0.4"
 simplelog = "0.12"
@@ -17,30 +20,16 @@ bytes = "1.0"
 ndarray = "0.16.1"
 rand = "0.9.0-alpha.2"
 rand_chacha = "0.9.0-alpha.2"
+env_logger = "0.11.5"
+parking_lot = "0.12.3"
 
-[lib]
-name = "ddos_protection"
-path = "src/lib.rs"
 
 [[bin]]
 name = "ddos_protection"
 path = "src/main.rs"
 
+[workspace]
+members = ["ddos_protection-common", "ddos_protection-ebpf", "xtask"]
+
 [features]
 default = []
-
-[profile.dev]
-opt-level = 3
-debug = false
-debug-assertions = false
-overflow-checks = false
-lto = true
-panic = 'abort'
-incremental = false
-codegen-units = 1
-rpath = false
-
-[profile.release]
-lto = true
-panic = 'abort'
-codegen-units = 1
