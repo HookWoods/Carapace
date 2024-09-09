@@ -2,27 +2,31 @@ use ndarray::{Array1, Array2, ArrayView1};
 use rand::prelude::*;
 use rand_chacha::ChaCha8Rng;
 use std::cmp::Ordering;
+use ddos_protection_common::machine_model::IsolationForest;
+use ddos_protection_common::machine_model::IsolationTree;
+use ddos_protection_common::machine_model::TreeNode;
+use ddos_protection_common::machine_model::MLModel;
 
-pub struct IsolationForest {
-    trees: Vec<IsolationTree>,
-    sample_size: usize,
-    n_trees: usize,
+pub trait IsolationForestMethods {
+    fn new(n_trees: usize, sample_size: usize) -> Self;
+    fn fit(&mut self, data: &Array2<f64>);
+    fn predict(&self, instance: &Array1<f64>) -> f64;
+    fn sample_data(&self, data: &Array2<f64>, rng: &mut ChaCha8Rng) -> Array2<f64>;
+    fn compute_feature_importance(&self, data: &Array2<f64>) -> Vec<f64>;
 }
 
-struct IsolationTree {
-    root: Option<Box<TreeNode>>,
+pub trait IsolationTreeMethods {
+    fn build(data: Array2<f64>, height: u32, rng: &mut ChaCha8Rng) -> Self;
+    fn path_length(&self, instance: &ArrayView1<f64>) -> u32;
 }
 
-struct TreeNode {
-    split_attr: usize,
-    split_value: f64,
-    left: Option<Box<TreeNode>>,
-    right: Option<Box<TreeNode>>,
-    height: u32,
+pub trait TreeNodeMethods {
+    fn path_length(&self, instance: &ArrayView1<f64>) -> u32;
+    fn compute_feature_importance(&self, importance: &mut Vec<f64>);
 }
 
-impl IsolationForest {
-    pub fn new(n_trees: usize, sample_size: usize) -> Self {
+impl IsolationForestMethods for IsolationForest {
+    fn new(n_trees: usize, sample_size: usize) -> Self {
         IsolationForest {
             trees: vec![],
             sample_size,
@@ -30,7 +34,7 @@ impl IsolationForest {
         }
     }
 
-    pub fn fit(&mut self, data: &Array2<f64>) {
+    fn fit(&mut self, data: &Array2<f64>) {
         let mut rng = ChaCha8Rng::from_entropy();
         for _ in 0..self.n_trees {
             let sample = self.sample_data(data, &mut rng);
@@ -39,7 +43,7 @@ impl IsolationForest {
         }
     }
 
-    pub fn predict(&self, instance: &Array1<f64>) -> f64 {
+    fn predict(&self, instance: &Array1<f64>) -> f64 {
         let avg_path_length: f64 = self.trees.iter()
             .map(|tree| tree.path_length(&instance.view()) as f64)
             .sum::<f64>() / self.n_trees as f64;
@@ -71,7 +75,7 @@ impl IsolationForest {
     }
 }
 
-impl IsolationTree {
+impl IsolationTreeMethods for IsolationTree {
     fn build(data: Array2<f64>, height: u32, rng: &mut ChaCha8Rng) -> Self {
         if data.nrows() <= 1 || height >= 100 {
             return IsolationTree { root: None };
@@ -111,7 +115,7 @@ impl IsolationTree {
     }
 }
 
-impl TreeNode {
+impl TreeNodeMethods for TreeNode {
     fn path_length(&self, instance: &ArrayView1<f64>) -> u32 {
         match instance[self.split_attr].partial_cmp(&self.split_value) {
             Some(Ordering::Less) => {
@@ -140,14 +144,17 @@ impl TreeNode {
     }
 }
 
-pub struct MLModel {
-    model: IsolationForest,
-    threshold: f64,
-    feature_importance: Vec<f64>,
+pub trait MlModelMethods {
+    fn new(n_trees: usize, sample_size: usize, threshold: f64) -> Self;
+    fn train(&mut self, data: &Array2<f64>);
+    fn predict(&self, instance: &ArrayView1<f64>) -> bool;
+    fn cross_validate(&mut self, data: &Array2<f64>, n_folds: usize) -> f64;
+    fn get_feature_importance(&self) -> &Vec<f64>;
+    fn engineer_features(stats: &[f64]) -> Array1<f64>;
 }
 
-impl MLModel {
-    pub fn new(n_trees: usize, sample_size: usize, threshold: f64) -> Self {
+impl MlModelMethods for MLModel {
+    fn new(n_trees: usize, sample_size: usize, threshold: f64) -> Self {
         MLModel {
             model: IsolationForest::new(n_trees, sample_size),
             threshold,
@@ -155,17 +162,17 @@ impl MLModel {
         }
     }
 
-    pub fn train(&mut self, data: &Array2<f64>) {
+    fn train(&mut self, data: &Array2<f64>) {
         self.model.fit(data);
         self.feature_importance = self.model.compute_feature_importance(data);
     }
 
-    pub fn predict(&self, instance: &ArrayView1<f64>) -> bool {
+    fn predict(&self, instance: &ArrayView1<f64>) -> bool {
         let anomaly_score = self.model.predict(&instance.to_owned());
         anomaly_score > self.threshold
     }
 
-    pub fn cross_validate(&mut self, data: &Array2<f64>, n_folds: usize) -> f64 {
+    fn cross_validate(&mut self, data: &Array2<f64>, n_folds: usize) -> f64 {
         let mut rng = ChaCha8Rng::from_entropy();
         let mut indices: Vec<usize> = (0..data.nrows()).collect();
         indices.shuffle(&mut rng);
@@ -204,35 +211,35 @@ impl MLModel {
         scores.iter().sum::<f64>() / n_folds as f64
     }
 
-    pub fn get_feature_importance(&self) -> &Vec<f64> {
+    fn get_feature_importance(&self) -> &Vec<f64> {
         &self.feature_importance
     }
-}
 
-pub fn engineer_features(stats: &[f64]) -> Array1<f64> {
-    let packet_count = stats[0];
-    let byte_count = stats[1];
-    let tcp_count = stats[2];
-    let udp_count = stats[3];
-    let icmp_count = stats[4];
-    let http_count = stats[5];
-    let https_count = stats[6];
+    fn engineer_features(stats: &[f64]) -> Array1<f64> {
+        let packet_count = stats[0];
+        let byte_count = stats[1];
+        let tcp_count = stats[2];
+        let udp_count = stats[3];
+        let icmp_count = stats[4];
+        let http_count = stats[5];
+        let https_count = stats[6];
 
-    let total_count = tcp_count + udp_count + icmp_count;
+        let total_count = tcp_count + udp_count + icmp_count;
 
-    Array1::from(vec![
-        packet_count,
-        byte_count,
-        tcp_count,
-        udp_count,
-        icmp_count,
-        http_count,
-        https_count,
-        byte_count / packet_count.max(1.0),  // Average packet size
-        tcp_count / total_count.max(1.0),    // TCP ratio
-        udp_count / total_count.max(1.0),    // UDP ratio
-        icmp_count / total_count.max(1.0),   // ICMP ratio
-        (http_count + https_count) / total_count.max(1.0),  // HTTP(S) ratio
-        (packet_count - tcp_count - udp_count - icmp_count).max(0.0) / packet_count.max(1.0),  // Unknown protocol ratio
-    ])
+        Array1::from(vec![
+            packet_count,
+            byte_count,
+            tcp_count,
+            udp_count,
+            icmp_count,
+            http_count,
+            https_count,
+            byte_count / packet_count.max(1.0),  // Average packet size
+            tcp_count / total_count.max(1.0),    // TCP ratio
+            udp_count / total_count.max(1.0),    // UDP ratio
+            icmp_count / total_count.max(1.0),   // ICMP ratio
+            (http_count + https_count) / total_count.max(1.0),  // HTTP(S) ratio
+            (packet_count - tcp_count - udp_count - icmp_count).max(0.0) / packet_count.max(1.0),  // Unknown protocol ratio
+        ])
+    }
 }

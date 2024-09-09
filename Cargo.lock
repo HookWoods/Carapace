@@ -30,6 +30,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "aho-corasick"
+version = "1.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8e60d3430d3a69478ad0993f19238d2df97c507009a52b3c10addcd7f6bcb916"
+dependencies = [
+ "memchr",
+]
+
+[[package]]
 name = "allocator-api2"
 version = "0.2.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -121,13 +130,87 @@ dependencies = [
 ]
 
 [[package]]
+name = "aya-ebpf"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b7318de0c49a17873182763831cb22f74fb30d04e2eb7e6d7b7e9b7d86d70ed3"
+dependencies = [
+ "aya-ebpf-bindings 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "aya-ebpf-cty 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "aya-ebpf-macros 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rustversion",
+]
+
+[[package]]
+name = "aya-ebpf"
+version = "0.1.0"
+source = "git+https://github.com/aya-rs/aya#635ed3baed5442c1364a360d7234b72c4ffe3fd8"
+dependencies = [
+ "aya-ebpf-bindings 0.1.0 (git+https://github.com/aya-rs/aya)",
+ "aya-ebpf-cty 0.2.1 (git+https://github.com/aya-rs/aya)",
+ "aya-ebpf-macros 0.1.0 (git+https://github.com/aya-rs/aya)",
+ "rustversion",
+]
+
+[[package]]
+name = "aya-ebpf-bindings"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a8536b7e39b232ecd854e587f473ba15640c09afc3e08408fc28144a7404ae75"
+dependencies = [
+ "aya-ebpf-cty 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "aya-ebpf-bindings"
+version = "0.1.0"
+source = "git+https://github.com/aya-rs/aya#635ed3baed5442c1364a360d7234b72c4ffe3fd8"
+dependencies = [
+ "aya-ebpf-cty 0.2.1 (git+https://github.com/aya-rs/aya)",
+]
+
+[[package]]
+name = "aya-ebpf-cty"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d5c130d898322b9698937465b3b749095dae85dba0da4ee648235947eb95738d"
+
+[[package]]
+name = "aya-ebpf-cty"
+version = "0.2.1"
+source = "git+https://github.com/aya-rs/aya#635ed3baed5442c1364a360d7234b72c4ffe3fd8"
+
+[[package]]
+name = "aya-ebpf-macros"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ce7820cc83547582284a140ffbdd46ab527d7ee2d9d0cfedf3f184fad3f8e15c"
+dependencies = [
+ "proc-macro-error",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "aya-ebpf-macros"
+version = "0.1.0"
+source = "git+https://github.com/aya-rs/aya#635ed3baed5442c1364a360d7234b72c4ffe3fd8"
+dependencies = [
+ "proc-macro-error",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "aya-log"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1f11a92f305b983e9f53433457dede617a4ad0aa22e4702220092f39e844c1a2"
 dependencies = [
  "aya",
- "aya-log-common",
+ "aya-log-common 0.1.14 (registry+https://github.com/rust-lang/crates.io-index)",
  "bytes",
  "log",
  "thiserror",
@@ -141,6 +224,77 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b6d38a351ee2d5dc24e04cac6184b1b39408642d9a8b585892c99146f8dd4edb"
 dependencies = [
  "num_enum",
+]
+
+[[package]]
+name = "aya-log-common"
+version = "0.1.14"
+source = "git+https://github.com/aya-rs/aya#635ed3baed5442c1364a360d7234b72c4ffe3fd8"
+dependencies = [
+ "num_enum",
+]
+
+[[package]]
+name = "aya-log-ebpf"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2a10bbadd0829895a91eb1cd2bb02d7af145704087f03812bed60cb9fe65dbb3"
+dependencies = [
+ "aya-ebpf 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "aya-log-common 0.1.14 (registry+https://github.com/rust-lang/crates.io-index)",
+ "aya-log-ebpf-macros 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "aya-log-ebpf"
+version = "0.1.0"
+source = "git+https://github.com/aya-rs/aya#635ed3baed5442c1364a360d7234b72c4ffe3fd8"
+dependencies = [
+ "aya-ebpf 0.1.0 (git+https://github.com/aya-rs/aya)",
+ "aya-log-common 0.1.14 (git+https://github.com/aya-rs/aya)",
+ "aya-log-ebpf-macros 0.1.0 (git+https://github.com/aya-rs/aya)",
+]
+
+[[package]]
+name = "aya-log-ebpf-macros"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f6d8251a75f56077db51892041aa6b77c70ef2723845d7a210979700b2f01bc4"
+dependencies = [
+ "aya-log-common 0.1.14 (registry+https://github.com/rust-lang/crates.io-index)",
+ "aya-log-parser 0.1.13 (registry+https://github.com/rust-lang/crates.io-index)",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "aya-log-ebpf-macros"
+version = "0.1.0"
+source = "git+https://github.com/aya-rs/aya#635ed3baed5442c1364a360d7234b72c4ffe3fd8"
+dependencies = [
+ "aya-log-common 0.1.14 (git+https://github.com/aya-rs/aya)",
+ "aya-log-parser 0.1.13 (git+https://github.com/aya-rs/aya)",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "aya-log-parser"
+version = "0.1.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "14b102eb5c88c9aa0b49102d3fbcee08ecb0dfa81014f39b373311de7a7032cb"
+dependencies = [
+ "aya-log-common 0.1.14 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "aya-log-parser"
+version = "0.1.13"
+source = "git+https://github.com/aya-rs/aya#635ed3baed5442c1364a360d7234b72c4ffe3fd8"
+dependencies = [
+ "aya-log-common 0.1.14 (git+https://github.com/aya-rs/aya)",
 ]
 
 [[package]]
@@ -158,6 +312,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "aya-tool"
+version = "0.1.0"
+source = "git+https://github.com/aya-rs/aya#635ed3baed5442c1364a360d7234b72c4ffe3fd8"
+dependencies = [
+ "anyhow",
+ "bindgen",
+ "clap",
+ "tempfile",
+ "thiserror",
+]
+
+[[package]]
 name = "backtrace"
 version = "0.3.73"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -170,6 +336,26 @@ dependencies = [
  "miniz_oxide",
  "object 0.36.4",
  "rustc-demangle",
+]
+
+[[package]]
+name = "bindgen"
+version = "0.70.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f49d8fed880d473ea71efb9bf597651e77201bdd4893efe54c9e5d65ae04ce6f"
+dependencies = [
+ "bitflags",
+ "cexpr",
+ "clang-sys",
+ "itertools",
+ "log",
+ "prettyplease",
+ "proc-macro2",
+ "quote",
+ "regex",
+ "rustc-hash",
+ "shlex",
+ "syn",
 ]
 
 [[package]]
@@ -200,10 +386,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "cexpr"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6fac387a98bb7c37292057cffc56d62ecb629900026402633ae9160df93a8766"
+dependencies = [
+ "nom",
+]
+
+[[package]]
 name = "cfg-if"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
+
+[[package]]
+name = "clang-sys"
+version = "1.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0b023947811758c97c59bf9d1c188fd619ad4718dcaa767947df1cadb14f39f4"
+dependencies = [
+ "glob",
+ "libc",
+ "libloading",
+]
 
 [[package]]
 name = "clap"
@@ -266,16 +472,38 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "aya",
+ "aya-ebpf 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "aya-log",
+ "aya-log-ebpf 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "bytes",
  "clap",
+ "ddos_protection-common",
+ "env_logger",
  "log",
  "ndarray",
+ "parking_lot",
  "rand",
  "rand_chacha",
  "simplelog",
  "thiserror",
  "tokio",
+]
+
+[[package]]
+name = "ddos_protection-common"
+version = "0.1.0"
+dependencies = [
+ "aya",
+]
+
+[[package]]
+name = "ddos_protection-ebpf"
+version = "0.1.0"
+dependencies = [
+ "aya-ebpf 0.1.0 (git+https://github.com/aya-rs/aya)",
+ "aya-log-ebpf 0.1.0 (git+https://github.com/aya-rs/aya)",
+ "ddos_protection-common",
+ "network-types",
 ]
 
 [[package]]
@@ -286,6 +514,51 @@ checksum = "b42b6fa04a440b495c8b04d0e71b707c585f83cb9cb28cf8cd0d976c315e31b4"
 dependencies = [
  "powerfmt",
 ]
+
+[[package]]
+name = "either"
+version = "1.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "60b1af1c220855b6ceac025d3f6ecdd2b7c4894bfe9cd9bda4fbb4bc7c0d4cf0"
+
+[[package]]
+name = "env_filter"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4f2c92ceda6ceec50f43169f9ee8424fe2db276791afde7b2cd8bc084cb376ab"
+dependencies = [
+ "log",
+ "regex",
+]
+
+[[package]]
+name = "env_logger"
+version = "0.11.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e13fa619b91fb2381732789fc5de83b45675e882f66623b7d8cb4f643017018d"
+dependencies = [
+ "anstream",
+ "anstyle",
+ "env_filter",
+ "humantime",
+ "log",
+]
+
+[[package]]
+name = "errno"
+version = "0.3.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "534c5cf6194dfab3db3242765c03bbe257cf92f22b38f6bc0c58d59108a820ba"
+dependencies = [
+ "libc",
+ "windows-sys 0.52.0",
+]
+
+[[package]]
+name = "fastrand"
+version = "2.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e8c02a5121d4ea3eb16a80748c74f5549a5665e4c21333c6098f283870fbdea6"
 
 [[package]]
 name = "getrandom"
@@ -303,6 +576,12 @@ name = "gimli"
 version = "0.29.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "40ecd4077b5ae9fd2e9e169b102c6c330d0605168eb0e8bf79952b256dbefffd"
+
+[[package]]
+name = "glob"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d2fabcfbdc87f4758337ca535fb41a6d701b65693ce38287d856d1674551ec9b"
 
 [[package]]
 name = "hashbrown"
@@ -327,10 +606,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d231dfb89cfffdbc30e7fc41579ed6066ad03abda9e567ccafae602b97ec5024"
 
 [[package]]
+name = "humantime"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
+
+[[package]]
 name = "is_terminal_polyfill"
 version = "1.70.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7943c866cc5cd64cbc25b2e01621d07fa8eb2a1a23160ee81ce38704e97b8ecf"
+
+[[package]]
+name = "itertools"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
+dependencies = [
+ "either",
+]
 
 [[package]]
 name = "itoa"
@@ -349,6 +643,22 @@ name = "libc"
 version = "0.2.158"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d8adc4bb1803a324070e64a98ae98f38934d91957a99cfb3a43dcbc01bc56439"
+
+[[package]]
+name = "libloading"
+version = "0.8.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4979f22fdb869068da03c9f7528f8297c6fd2606bc3a4affe42e6a823fdb8da4"
+dependencies = [
+ "cfg-if",
+ "windows-targets",
+]
+
+[[package]]
+name = "linux-raw-sys"
+version = "0.4.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "78b3ae25bc7c8c38cec158d1f2757ee79e9b3740fbc7ccf0e59e4b08d793fa89"
 
 [[package]]
 name = "lock_api"
@@ -381,6 +691,12 @@ name = "memchr"
 version = "2.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "78ca9ab1a0babb1e7d5695e3530886289c18cf2f87ec19a575a0abdce112e3a3"
+
+[[package]]
+name = "minimal-lexical"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a"
 
 [[package]]
 name = "miniz_oxide"
@@ -416,6 +732,22 @@ dependencies = [
  "portable-atomic",
  "portable-atomic-util",
  "rawpointer",
+]
+
+[[package]]
+name = "network-types"
+version = "0.0.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "41b13eba62f530cd2ea031938ac4472b9b649694baa1e587c2a2fadc07844d3c"
+
+[[package]]
+name = "nom"
+version = "7.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d273983c5a657a70a3e8f2a01329822f3b8c8172b73826411a55751e404a0a4a"
+dependencies = [
+ "memchr",
+ "minimal-lexical",
 ]
 
 [[package]]
@@ -564,6 +896,39 @@ dependencies = [
 ]
 
 [[package]]
+name = "prettyplease"
+version = "0.2.22"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "479cf940fbbb3426c32c5d5176f62ad57549a0bb84773423ba8be9d089f5faba"
+dependencies = [
+ "proc-macro2",
+ "syn",
+]
+
+[[package]]
+name = "proc-macro-error"
+version = "1.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "da25490ff9892aab3fcf7c36f08cfb902dd3e71ca0f9f9517bea02a73a5ce38c"
+dependencies = [
+ "proc-macro-error-attr",
+ "proc-macro2",
+ "quote",
+ "version_check",
+]
+
+[[package]]
+name = "proc-macro-error-attr"
+version = "1.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a1be40180e52ecc98ad80b184934baf3d0d29f979574e439af5a55274b35f869"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "version_check",
+]
+
+[[package]]
 name = "proc-macro2"
 version = "1.0.86"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -628,10 +993,64 @@ dependencies = [
 ]
 
 [[package]]
+name = "regex"
+version = "1.10.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4219d74c6b67a3654a9fbebc4b419e22126d13d2f3c4a07ee0cb61ff79a79619"
+dependencies = [
+ "aho-corasick",
+ "memchr",
+ "regex-automata",
+ "regex-syntax",
+]
+
+[[package]]
+name = "regex-automata"
+version = "0.4.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "38caf58cc5ef2fed281f89292ef23f6365465ed9a41b7a7754eb4e26496c92df"
+dependencies = [
+ "aho-corasick",
+ "memchr",
+ "regex-syntax",
+]
+
+[[package]]
+name = "regex-syntax"
+version = "0.8.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7a66a03ae7c801facd77a29370b4faec201768915ac14a721ba36f20bc9c209b"
+
+[[package]]
 name = "rustc-demangle"
 version = "0.1.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "719b953e2095829ee67db738b3bfa9fa368c94900df327b3f07fe6e794d2fe1f"
+
+[[package]]
+name = "rustc-hash"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
+
+[[package]]
+name = "rustix"
+version = "0.38.36"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3f55e80d50763938498dd5ebb18647174e0c76dc38c5505294bb224624f30f36"
+dependencies = [
+ "bitflags",
+ "errno",
+ "libc",
+ "linux-raw-sys",
+ "windows-sys 0.52.0",
+]
+
+[[package]]
+name = "rustversion"
+version = "1.0.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "955d28af4278de8121b7ebeb796b6a45735dc01436d898801014aced2773a3d6"
 
 [[package]]
 name = "scopeguard"
@@ -716,6 +1135,19 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "tempfile"
+version = "3.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "04cbcdd0c794ebb0d4cf35e88edd2f7d2c4c3e9a5a6dab322839b321c6a87a64"
+dependencies = [
+ "cfg-if",
+ "fastrand",
+ "once_cell",
+ "rustix",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -923,6 +1355,15 @@ name = "windows_x86_64_msvc"
 version = "0.52.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "589f6da84c646204747d1270a2a5661ea66ed1cced2631d546fdfb155959f9ec"
+
+[[package]]
+name = "xtask"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "aya-tool",
+ "clap",
+]
 
 [[package]]
 name = "zerocopy"

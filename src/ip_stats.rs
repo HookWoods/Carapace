@@ -1,4 +1,6 @@
-#[derive(Clone)]
+use aya::Pod;
+
+#[derive(Clone, Copy)]
 #[repr(C)]
 pub struct IpStats {
     pub packet_count: u32,
@@ -11,3 +13,5 @@ pub struct IpStats {
     pub https_count: u32,
     pub decay_factor: f32,
 }
+
+unsafe impl Pod for IpStats {}

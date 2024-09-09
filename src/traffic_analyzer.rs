@@ -1,14 +1,15 @@
 use crate::blacklist_manager::BlacklistManager;
 use crate::ip_stats::IpStats;
-use crate::ml_model::{MLModel, engineer_features};
-use crate::rate_limiter::RateLimiter;
+use crate::rate_limiter::{RateLimitInfo, RateLimiter};
 use crate::thresholds::DynamicThreshold;
 use crate::utils::determine_traffic_tier;
-use aya::maps::{HashMap, MapData};
 use ndarray::{Array1, Array2, ArrayView1};
 use std::collections::HashMap as StdHashMap;
 use std::collections::VecDeque;
 use std::net::Ipv4Addr;
+use aya::maps::{HashMap, MapData};
+use ddos_protection_common::machine_model::MLModel;
+use crate::ml::ml_model::MlModelMethods;
 
 #[derive(Clone, Copy)]
 pub struct TrafficAnalyzerConfig {
@@ -98,7 +99,7 @@ impl TrafficAnalyzer {
         }
 
         // ML-based analysis
-        let features: Array1<f64> = engineer_features(&[
+        let features: Array1<f64> = self.ml_model.engineer_features(&[
             stats.packet_count as f64,
             stats.byte_count as f64,
             stats.tcp_count as f64,
@@ -118,7 +119,7 @@ impl TrafficAnalyzer {
 
     pub fn train(&mut self, historical_data: &VecDeque<IpStats>) {
         let training_data: Vec<Array1<f64>> = historical_data.iter().map(|stats| {
-            engineer_features(&[
+            self.ml_model.engineer_features(&[
                 stats.packet_count as f64,
                 stats.byte_count as f64,
                 stats.tcp_count as f64,
@@ -146,8 +147,9 @@ impl TrafficAnalyzer {
 }
 
 pub async fn analyze_traffic(
-    ip_stats_map: &HashMap<MapData, u32, IpStats>,
-    blacklist_map: &mut HashMap<MapData, u32, u8>,
+    blacklist_map: &mut HashMap<&mut MapData, u32, u8>,
+    ip_stats_map: &mut HashMap<&mut MapData, u32, IpStats>,
+    rate_limit_map: &mut HashMap<&mut MapData, u32, RateLimitInfo>,
     packet_threshold: &DynamicThreshold,
     byte_threshold: &DynamicThreshold,
     ip_thresholds: &mut StdHashMap<u32, (u32, u32)>,
@@ -172,10 +174,8 @@ pub async fn analyze_traffic(
         let traffic_tier = determine_traffic_tier(&stats);
 
         // Apply rate limiting
-        let decayed_byte_count = (stats.byte_count as f32 * stats.decay_factor) as u32;
-        if !rate_limiter.check_rate(ip, traffic_tier, decayed_byte_count, now) {
-            println!("Rate limit exceeded for IP: {} (Tier: {:?}). Dropping excess traffic.", ip_addr, traffic_tier);
-            continue; // Skip further analysis if rate limit is exceeded
+        if let Err(e) = rate_limiter.update_rate_limit(ip, traffic_tier, rate_limit_map).await {
+            eprintln!("Failed to update rate limit for IP {}: {:?}", ip_addr, e);
         }
 
         let (packet_limit, byte_limit) = ip_thresholds
@@ -183,6 +183,7 @@ pub async fn analyze_traffic(
             .or_insert((packet_threshold.base, byte_threshold.base));
 
         let analyzer = ip_analyzers.entry(ip).or_insert_with(|| TrafficAnalyzer::new(traffic_analyzer_config));
+        let decayed_byte_count = (stats.byte_count as f32 * stats.decay_factor) as u32;
         let decayed_packet_count = (stats.packet_count as f32 * stats.decay_factor) as u32;
         analyzer.add_packet(decayed_byte_count, stats.last_seen);
         let suspicion_score = analyzer.analyze(&stats);
